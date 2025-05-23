@@ -1,3 +1,17 @@
+# Hunyuan 3D is licensed under the TENCENT HUNYUAN NON-COMMERCIAL LICENSE AGREEMENT
+# except for the third-party components listed below.
+# Hunyuan 3D does not impose any additional limitations beyond what is outlined
+# in the repsective licenses of these third-party components.
+# Users must comply with all terms and conditions of original licenses of these third-party
+# components and must ensure that the usage of the third party components adheres to
+# all relevant laws and regulations.
+
+# For avoidance of doubts, Hunyuan 3D means the large language models and
+# their software and algorithms, including trained model weights, parameters (including
+# optimizer states), machine-learning model code, inference-enabling code, training-enabling code,
+# fine-tuning enabling code and other elements of the foregoing made publicly available
+# by Tencent in accordance with TENCENT HUNYUAN COMMUNITY LICENSE AGREEMENT.
+
 bl_info = {
     "name": "Hunyuan3D-2 Generator",
     "author": "Tencent Hunyuan3D",
@@ -157,14 +171,14 @@ class Hunyuan3DOperator(bpy.types.Operator):
             props.status_message = f"Generating {mesh_type} with {prompt_type}...\n" \
                                    "This may take several minutes depending \n on your GPU power."
 
-        self.thread = threading.Thread(target=self.generate_model)
+        self.thread = threading.Thread(target=self.generate_model, args=[context])
         self.thread.start()
 
         wm = context.window_manager
         wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
-    def generate_model(self):
+    def generate_model(self, context):
         self.report({'INFO'}, f"Generation Start")
         base_url = self.api_url.rstrip('/')
 
@@ -238,6 +252,9 @@ class Hunyuan3DOperator(bpy.types.Operator):
                         },
                     )
             self.report({'INFO'}, f"Post Done")
+            self.task_finished = True
+            props = context.scene.gen_3d_props
+            props.is_processing = False
 
             if response.status_code != 200:
                 self.report({'ERROR'}, f"Generation failed: {response.text}")
@@ -274,6 +291,8 @@ class Hunyuan3DOperator(bpy.types.Operator):
 
         finally:
             self.task_finished = True
+            props = context.scene.gen_3d_props
+            props.is_processing = False
             self.selected_mesh_base64 = ""
 
 
